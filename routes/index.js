@@ -8,6 +8,7 @@ router.get('/', function(req, res, next) {
 
 //authentication routes
 router.post('sign-up', function (req, res, next) {
+  //check for uniqueness of username
 });
 router.post('log-in', function (req, res, next) {
 });

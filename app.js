@@ -18,6 +18,41 @@ mongoose.connect(mongoDB);
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error: '));
 
+//set up passport
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+
+var bcrypt = require('bcryptjs');
+var User = require('./models/user');
+
+passport.use(new LocalStrategy(
+  function (username, password, done) {
+    User.findOne({ username: username }, function (err, user) {
+      if (err) {
+        return done(err);
+      }
+
+      if (!user) {
+        return done(null, false, { message: 'Invalid credentials' });
+      }
+
+      bcrypt.compare(password, user.password, function (err, res) {
+        if (err) {
+          return done(err);
+        }
+
+        if (res) {
+          return done(null, user);
+        }
+
+        return done(null, false, { message: 'Invalid credentials' });
+      })
+    })
+  }
+));
+
+app.use(passport.initialize());
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
