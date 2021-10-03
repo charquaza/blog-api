@@ -21,6 +21,8 @@ db.on('error', console.error.bind(console, 'MongoDB connection error: '));
 //set up passport
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
+var JwtStrategy = require('passport-jwt').Strategy;
+var ExtractJwt = require('passport-jwt').ExtractJwt;
 
 var bcrypt = require('bcryptjs');
 var User = require('./models/user');
@@ -48,6 +50,16 @@ passport.use(new LocalStrategy(
         return done(null, false, { message: 'Invalid credentials' });
       })
     })
+  }
+));
+
+passport.use(new JWTStrategy({
+    jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
+    secretOrKey : process.env.JWT_SECRET
+  },
+  function (payload, done) {
+    //what happens if token is not valid?
+    return done(null, payload);
   }
 ));
 

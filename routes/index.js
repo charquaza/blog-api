@@ -4,11 +4,6 @@ var userController = require('../controllers/userController');
 var postController = require('../controllers/postController');
 var commentController = require('../controllers/commentController');
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
-
 //authentication routes
 //make routes RESTful?
 router.post('/sign-up', userController.signUp);
