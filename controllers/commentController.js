@@ -1,4 +1,5 @@
 var Comment = require('../models/comment');
+var Post = require('../models/post');
 var { body, validationResult } = require('express-validator');
 var passport = require('passport');
 
@@ -42,27 +43,39 @@ exports.create = [
         if (!errors.isEmpty()) {
             res.status(400).json({ errors: errors.array() });
         } else {
-            var comment = new Comment(
-                {
-                    author: req.user,
-                    timestamp: Date.now(),
-                    content: req.body.content,
-                }
-            );
-
-            comment.save(function (err, comment) {
+            //allow comment if parent post is published
+            Post.findById(req.params.postId, function (err, post) {
                 if (err) {
                     return next(err);
                 }
 
-                res.json({ data: comment });
+                if (post === null || !post.is_published) {
+                    res.status(404).json({ errors: ['Post not found'] });
+                } else {
+                    var comment = new Comment(
+                        {
+                            author: req.user,
+                            timestamp: Date.now(),
+                            content: req.body.content,
+                            post: req.params.postId
+                        }
+                    );
+        
+                    comment.save(function (err, comment) {
+                        if (err) {
+                            return next(err);
+                        }
+        
+                        res.json({ data: comment });
+                    });
+                }
             });
         }
     }
 ];
 
 exports.getById = function (req, res, next) {
-    Comment.findById(req.params.id)
+    Comment.findById(req.params.commentId)
         .populate('author', 'first_name last_name username')
         .exec(function (err, comment) {
             if (err) {
@@ -91,7 +104,7 @@ exports.update = [
                 return next();
             } else {
                 //check if user is author of comment
-                Comment.findById(req.params.id, function (err, comment) {
+                Comment.findById(req.params.commentId, function (err, comment) {
                     if (err) {
                         return next(err);
                     }
@@ -121,11 +134,12 @@ exports.update = [
                     author: req.user,
                     timestamp: Date.now(),
                     content: req.body.content,
-                    _id: req.params.id
+                    post: req.params.postId,
+                    _id: req.params.commentId
                 }
             );
 
-            Comment.findByIdAndUpdate(req,params.id, comment, function (err, comment) {
+            Comment.findByIdAndUpdate(req,params.commentId, comment, function (err, comment) {
                 if (err) {
                     return next(err);
                 }
@@ -154,7 +168,7 @@ exports.delete = [
                 return next();
             } else {
                 //check if user is author of comment
-                Comment.findById(req.params.id, function (err, comment) {
+                Comment.findById(req.params.commentId, function (err, comment) {
                     if (err) {
                         return next(err);
                     }
@@ -170,7 +184,7 @@ exports.delete = [
     },
 
     function (req, res, next) {
-        Comment.findByIdAndDelete(req.params.id, function (err, comment) {
+        Comment.findByIdAndDelete(req.params.commentId, function (err, comment) {
             if (err) {
                 return next(err);
             }
