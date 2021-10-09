@@ -2,10 +2,8 @@ var Comment = require('../models/comment');
 var { body, validationResult } = require('express-validator');
 var passport = require('passport');
 
-//manually set req.user to user in passport.authenticate?
-
 exports.getAll = function (req, res, next) {
-    //geta all comments of a specific post
+    //get all comments of a specific post
     Comment.find({ author: req.params.postId })
         .populate('author', 'first_name last_name username')
         .exec(function (err, commentList) {
