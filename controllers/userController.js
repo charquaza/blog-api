@@ -1,10 +1,8 @@
 var User = require('../models/user');
 var { body, validationResult } = require('express-validator'); 
+var bcrypt = require('bcryptjs');
 var passport = require('passport');
 var jwt = require('jsonwebtoken');
-
-//check login status first
-//signup and login - create JWT token and provide to client
 
 exports.signUp = [
     body('first_name').trim().notEmpty().withMessage('First name must not be empty')
@@ -42,7 +40,7 @@ exports.signUp = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
         } else {
             var user = new User(
                 {
@@ -53,21 +51,13 @@ exports.signUp = [
                 }
             );
 
-            User.save(function (err, user) {
+            user.save(function (err, user) {
                 if (err) {
                     return next(err);
                 }
 
-                req.login(user, { session: false }, function (err) {
-                    if (err) {
-                        return next(err);
-                    }
-
-                    //encode entire user object?
-                    var token = jwt.sign(user, process.env.JWT_SECRET);
-
-                    res.json({ user, token });
-                })(req, res, next);
+                var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+                res.json({ user, token });
             });
         }
     }
@@ -80,18 +70,10 @@ exports.logIn = function (req, res, next) {
         }
 
         if (!user) {
-            res.json({ errors: [info.message] });
+            res.status(401).json({ errors: [info.message] });
         } else {
-            req.login(user, { session: false }, function (err) {
-                if (err) {
-                    return next(err);
-                }
-    
-                //encode entire user object?
-                var token = jwt.sign(user, process.env.JWT_SECRET);
-    
-                res.json({ user, token });
-            })(req, res, next);
+            var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+            res.json({ user, token });
         }
     })(req, res, next);
 };

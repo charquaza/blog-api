@@ -5,7 +5,6 @@ var postController = require('../controllers/postController');
 var commentController = require('../controllers/commentController');
 
 //authentication routes
-//make routes RESTful?
 router.post('/sign-up', userController.signUp);
 router.post('/log-in', userController.logIn);
 router.post('/log-out', userController.logOut);
@@ -19,11 +18,11 @@ router.put('/posts/:id', postController.update);
 router.delete('/posts/:id', postController.delete);
 
 //Comments routes
-router.get('/comments', commentController.getAll);
-router.post('/comments', commentController.create);
+router.get('/posts/:postId/comments', commentController.getAll);
+router.post('posts/:postId/comments', commentController.create);
 
-router.get('/comments/:id', commentController.getById);
-router.put('/comments/:id', commentController.update);
-router.delete('/comments/:id', commentController.delete);
+router.get('/posts/:postId/comments/:commentId', commentController.getById);
+router.put('/posts/:postId/comments/:commentId', commentController.update);
+router.delete('/posts/:postId/comments/:commentId', commentController.delete);
 
 module.exports = router;

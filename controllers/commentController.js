@@ -1,8 +1,12 @@
 var Comment = require('../models/comment');
 var { body, validationResult } = require('express-validator');
+var passport = require('passport');
+
+//manually set req.user to user in passport.authenticate?
 
 exports.getAll = function (req, res, next) {
-    Comment.find(filter)
+    //geta all comments of a specific post
+    Comment.find({ author: req.params.postId })
         .populate('author', 'first_name last_name username')
         .exec(function (err, commentList) {
             if (err) {
@@ -16,11 +20,17 @@ exports.getAll = function (req, res, next) {
 exports.create = [
     //allow new comment if user is signed in
     function (req, res, next) {
-        if (!req.user) {
-            res.status(401).json({ errors: ['Please log in first'] });
-        } else {
-            next();
-        }
+        passport.authenticate('jwt', { session: false }, function (err, user, info) {
+            if (err) {
+                return next(err);
+            }
+
+            if (!user) {
+                res.status(401).json({ errors: ['Please log in first'] });
+            } else {
+                next();
+            }
+        })(req, res, next);
     },
 
     //validate input
@@ -31,7 +41,7 @@ exports.create = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
         } else {
             var comment = new Comment(
                 {
@@ -41,7 +51,7 @@ exports.create = [
                 }
             );
 
-            Comment.save(function (err, comment) {
+            comment.save(function (err, comment) {
                 if (err) {
                     return next(err);
                 }
@@ -71,23 +81,30 @@ exports.getById = function (req, res, next) {
 exports.update = [
     //allow update if user is admin or author
     function (req, res, next) {
-        if (!req.user) {
-            return res.status(401).json({ errors: ['Please log in first'] });
-        } else if (req.user.is_admin) {
-            return next();
-        } else {
-            Comment.findById(req.params.id, function (err, comment) {
-                if (err) {
-                    return next(err);
-                }
-    
-                if (req.user._id === comment.author) {
-                    next();
-                } else {
-                    res.status(403).json({ errors: ['You must be an admin or the author to update this comment'] });
-                }
-            });
-        }
+        passport.authenticate('jwt', { session: false }, function (err, user, info) {
+            if (err) {
+                return next(err);
+            }
+
+            if (!user) {
+                return res.status(401).json({ errors: ['Please log in first'] });
+            } else if (user.is_admin) {
+                return next();
+            } else {
+                //check if user is author of comment
+                Comment.findById(req.params.id, function (err, comment) {
+                    if (err) {
+                        return next(err);
+                    }
+        
+                    if (user._id === comment.author) {
+                        next();
+                    } else {
+                        res.status(403).json({ errors: ['You must be an admin or the author to update this comment'] });
+                    }
+                });
+            }
+        })(req, res, next);
     },
 
     //validate input
@@ -98,7 +115,7 @@ exports.update = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
         } else {
             var comment = new Comment(
                 {
@@ -109,7 +126,7 @@ exports.update = [
                 }
             );
 
-            Comment.findByIdAndUpdate(function (err, comment) {
+            Comment.findByIdAndUpdate(req,params.id, comment, function (err, comment) {
                 if (err) {
                     return next(err);
                 }
@@ -124,23 +141,37 @@ exports.update = [
     }
 ];
 
-exports.delete = function (req, res, next) {
+exports.delete = [
     //allow delete if user is admin or author
-    
-    if (!req.user) {
-        return res.status(401).json({ errors: ['Please log in first'] });
-    } 
+    function (req, res, next) {
+        passport.authenticate('jwt', { session: false }, function (err, user, info) {
+            if (err) {
+                return next(err);
+            }
 
-    Comment.findById(req.params.id, function (err, comment) {
-        if (err) {
-            return next(err);
-        }
+            if (!user) {
+                return res.status(401).json({ errors: ['Please log in first'] });
+            } else if (user.is_admin) {
+                return next();
+            } else {
+                //check if user is author of comment
+                Comment.findById(req.params.id, function (err, comment) {
+                    if (err) {
+                        return next(err);
+                    }
+        
+                    if (user._id === comment.author) {
+                        next();
+                    } else {
+                        res.status(403).json({ errors: ['You must be an admin or the author to delete this comment'] });
+                    }
+                });
+            }
+        })(req, res, next);
+    },
 
-        if (req.user._id !== comment.author || !req.user.is_admin) {
-            return res.status(403).json({ errors: ['You must be an admin or the author to delete this comment'] });
-        } 
-
-        Comment.findByIdAndDelete(function (err, comment) {
+    function (req, res, next) {
+        Comment.findByIdAndDelete(req.params.id, function (err, comment) {
             if (err) {
                 return next(err);
             }
@@ -151,5 +182,5 @@ exports.delete = function (req, res, next) {
                 res.json({ data: comment });
             }
         });
-    });
-};
+    }
+];
