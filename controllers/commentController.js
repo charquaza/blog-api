@@ -4,8 +4,9 @@ var passport = require('passport');
 
 exports.getAll = function (req, res, next) {
     //get all comments of a specific post
-    Comment.find({ author: req.params.postId })
+    Comment.find({ post: req.params.postId })
         .populate('author', 'first_name last_name username')
+        .sort('timestamp')
         .exec(function (err, commentList) {
             if (err) {
                 return next(err);

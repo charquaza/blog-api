@@ -22,6 +22,7 @@ exports.getAll = [
 
         Post.find(filter)
             .populate('author', 'first_name last_name username')
+            .sort('timestamp')
             .exec(function (err, postList) {
                 if (err) {
                     return next(err);
