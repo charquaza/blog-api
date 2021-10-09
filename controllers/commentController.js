@@ -28,7 +28,9 @@ exports.create = [
             if (!user) {
                 res.status(401).json({ errors: ['Please log in first'] });
             } else {
-                next();
+                req.login(user, { session: false }, function (err) {
+                    return next(err);
+                });
             }
         })(req, res, next);
     },
@@ -54,7 +56,7 @@ exports.create = [
                 } else {
                     var comment = new Comment(
                         {
-                            author: req.user,
+                            author: req.user._id,
                             timestamp: Date.now(),
                             content: req.body.content,
                             post: req.params.postId
@@ -75,7 +77,7 @@ exports.create = [
 ];
 
 exports.getById = function (req, res, next) {
-    Comment.findById(req.params.commentId)
+    Comment.findOne({ post: req.params.postId, _id: req.params.commentId})
         .populate('author', 'first_name last_name username')
         .exec(function (err, comment) {
             if (err) {
@@ -100,22 +102,29 @@ exports.update = [
 
             if (!user) {
                 return res.status(401).json({ errors: ['Please log in first'] });
-            } else if (user.is_admin) {
-                return next();
-            } else {
-                //check if user is author of comment
-                Comment.findById(req.params.commentId, function (err, comment) {
-                    if (err) {
+            } 
+            
+            Comment.findOne({ post: req.params.postId, _id: req.params.commentId}, function (err, comment) {
+                if (err) {
+                    return next(err);
+                }
+    
+                if (comment === null) {
+                    return res.status(404).json({ errors: ['Comment not found'] });
+                }
+
+                //convert ObjectId objects to strings for comparison
+                if (user._id.toString() === comment.author.toString() || user.is_admin) {
+                    //store comment.author for future access, since req.user can be either comment.author or admin
+                    res.locals.originalCommentAuthor = comment.author;
+
+                    req.login(user, { session: false }, function (err) {
                         return next(err);
-                    }
-        
-                    if (user._id === comment.author) {
-                        next();
-                    } else {
-                        res.status(403).json({ errors: ['You must be an admin or the author to update this comment'] });
-                    }
-                });
-            }
+                    });
+                } else {
+                    res.status(403).json({ errors: ['You must be an admin or the author to update this comment'] });
+                }
+            });
         })(req, res, next);
     },
 
@@ -131,7 +140,7 @@ exports.update = [
         } else {
             var comment = new Comment(
                 {
-                    author: req.user,
+                    author: res.locals.originalCommentAuthor._id,
                     timestamp: Date.now(),
                     content: req.body.content,
                     post: req.params.postId,
@@ -139,7 +148,7 @@ exports.update = [
                 }
             );
 
-            Comment.findByIdAndUpdate(req,params.commentId, comment, function (err, comment) {
+            Comment.findOneAndUpdate({ post: req.params.postId, _id: req.params.commentId}, comment, function (err, comment) {
                 if (err) {
                     return next(err);
                 }
@@ -165,16 +174,25 @@ exports.delete = [
             if (!user) {
                 return res.status(401).json({ errors: ['Please log in first'] });
             } else if (user.is_admin) {
-                return next();
+                req.login(user, { session: false }, function (err) {
+                    return next(err);
+                });
             } else {
                 //check if user is author of comment
-                Comment.findById(req.params.commentId, function (err, comment) {
+                Comment.findOne({ post: req.params.postId, _id: req.params.commentId}, function (err, comment) {
                     if (err) {
                         return next(err);
                     }
+
+                    if (comment === null) {
+                        return res.status(404).json({ errors: ['Comment not found'] });
+                    }
         
-                    if (user._id === comment.author) {
-                        next();
+                    //convert ObjectId objects to strings for comparison
+                    if (user._id.toString() === comment.author.toString()) {
+                        req.login(user, { session: false }, function (err) {
+                            return next(err);
+                        });
                     } else {
                         res.status(403).json({ errors: ['You must be an admin or the author to delete this comment'] });
                     }
@@ -184,7 +202,7 @@ exports.delete = [
     },
 
     function (req, res, next) {
-        Comment.findByIdAndDelete(req.params.commentId, function (err, comment) {
+        Comment.findOneAndDelete({ post: req.params.postId, _id: req.params.commentId}, function (err, comment) {
             if (err) {
                 return next(err);
             }

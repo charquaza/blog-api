@@ -19,7 +19,7 @@ router.delete('/posts/:id', postController.delete);
 
 //Comments routes
 router.get('/posts/:postId/comments', commentController.getAll);
-router.post('posts/:postId/comments', commentController.create);
+router.post('/posts/:postId/comments', commentController.create);
 
 router.get('/posts/:postId/comments/:commentId', commentController.getById);
 router.put('/posts/:postId/comments/:commentId', commentController.update);

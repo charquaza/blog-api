@@ -154,7 +154,7 @@ exports.update = [
         } else {
             var post = new Post(
                 {
-                    author: req.user,
+                    author: req.user._id,
                     timestamp: Date.now(),
                     title: req.body.title,
                     content: req.body.content,
