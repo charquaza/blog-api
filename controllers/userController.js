@@ -72,7 +72,7 @@ exports.logIn = function (req, res, next) {
         if (!user) {
             res.status(401).json({ errors: [info.message] });
         } else {
-            var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+            var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
             res.json({ user, token });
         }
     })(req, res, next);

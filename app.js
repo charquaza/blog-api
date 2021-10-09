@@ -57,8 +57,6 @@ passport.use(new JwtStrategy({
     secretOrKey : process.env.JWT_SECRET
   },
   function (payload, done) {
-    //what if no token was provided?
-    //how to differentiate no token vs invalid token?
     User.findById(payload.id, function (err, user) {
       if (err) {
         return done(err);
