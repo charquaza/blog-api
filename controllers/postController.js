@@ -1,4 +1,5 @@
 var Post = require('../models/post');
+var Comment = require('../models/comment');
 var { body, validationResult } = require('express-validator');
 var passport = require('passport');
 
@@ -196,16 +197,24 @@ exports.delete = [
     },
 
     function (req, res, next) {
-        Post.findByIdAndDelete(req.params.id, function (err, post) {
+        //delete all comments associated with post
+        Comment.deleteMany({ post: req.params.id }, function (err) {
             if (err) {
                 return next(err);
             }
 
-            if (post === null) {
-                res.status(404).json({ errors: ['Post not found'] });
-            } else {
-                res.json({ data: post });
-            }
+            //delete the post
+            Post.findByIdAndDelete(req.params.id, function (err, post) {
+                if (err) {
+                    return next(err);
+                }
+
+                if (post === null) {
+                    res.status(404).json({ errors: ['Post not found'] });
+                } else {
+                    res.json({ data: post });
+                }
+            });
         });
     }
 ];
