@@ -40,7 +40,8 @@ exports.signUp = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            let errorMessages = errors.array().map(err => err.msg);
+            res.status(400).json({ errors: errorMessages });
         } else {
             var user = new User(
                 {

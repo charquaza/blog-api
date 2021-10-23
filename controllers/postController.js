@@ -65,7 +65,8 @@ exports.create = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            let errorMessages = errors.array().map(err => err.msg);
+            res.status(400).json({ errors: errorMessages });
         } else {
             var post = new Post(
                 {
@@ -73,6 +74,7 @@ exports.create = [
                     timestamp: Date.now(),
                     title: req.body.title,
                     content: req.body.content,
+                    //TODO: is_published logic may need update
                     is_published: (req.body.publish === undefined ? true : false)
                 }
             );
@@ -150,7 +152,8 @@ exports.update = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            let errorMessages = errors.array().map(err => err.msg);
+            res.status(400).json({ errors: errorMessages });
         } else {
             var post = new Post(
                 {

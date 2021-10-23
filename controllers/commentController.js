@@ -3,6 +3,7 @@ var Post = require('../models/post');
 var { body, validationResult } = require('express-validator');
 var passport = require('passport');
 
+//TODO: change validation error response formats for all controllers
 exports.getAll = function (req, res, next) {
     //get all comments of a specific post
     Comment.find({ post: req.params.postId })
@@ -43,7 +44,8 @@ exports.create = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            let errorMessages = errors.array().map(err => err.msg);
+            res.status(400).json({ errors: errorMessages });
         } else {
             //allow comment if parent post is published
             Post.findById(req.params.postId, function (err, post) {
@@ -136,7 +138,8 @@ exports.update = [
         var errors = validationResult(req);
 
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
+            let errorMessages = errors.array().map(err => err.msg);
+            res.status(400).json({ errors: errorMessages });
         } else {
             var comment = new Comment(
                 {
