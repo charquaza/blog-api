@@ -57,7 +57,9 @@ exports.signUp = [
                 }
 
                 var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-                res.json({ user, token });
+                var userCopy = { ...user }._doc;
+                delete userCopy.password;   //remove password before sending user data to client
+                res.json({ user: userCopy, token });
             });
         }
     }
@@ -73,7 +75,9 @@ exports.logIn = function (req, res, next) {
             res.status(401).json({ errors: [info.message] });
         } else {
             var token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-            res.json({ user, token });
+            var userCopy = { ...user }._doc;
+            delete userCopy.password;   //remove password before sending user data to client
+            res.json({ user: userCopy, token });
         }
     })(req, res, next);
 };
